@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en" xmlns="http://www.w3.org/1999/html">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>OpenCV js</title>
+</head>
+<body>
+<h2>Hello OpenCV.js</h2>
+<p id="status">OpenCV.js is loading...</p>
+<div>
+    <div>
+        <img src="" id="imageSrc" alt="Input"/>
+        <br/>
+        <label for="fileInput">Choose a profile picture:</label>
+        <input type="file" id="fileInput" name="fileInput" accept="image/png, image/jpeg"
+               style="height: 100px; background-color: gray"/>
+    </div>
+    <div>
+        <label for="cowbell">threshold</label>
+        <input type="range" id="cowbell" name="cowbell" min="0" max="255" value="100" style="width: 40vw"/>
+        <span id="threshold">100</span>
+
+        <div>
+            <input type="radio" id="THRESH_BINARY" name="threshold" value="THRESH_BINARY"/>
+            <label for="THRESH_BINARY">THRESH_BINARY</label>
+
+            <input type="radio" id="THRESH_BINARY_INV" name="threshold" value="THRESH_BINARY_INV" checked/>
+            <label for="THRESH_BINARY_INV">THRESH_BINARY_INV</label>
+        </div>
+    </div>
+    <div>
+        <canvas id="canvasOutput" hidden="hidden"></canvas>
+    </div>
+    <div>
+        <img src="" id="imageOutput" alt="Output">
+    </div>
+</div>
+<script>
+    // 原图
+    const image = document.getElementById('imageSrc')
+    // 输入框
+    const input = document.getElementById('fileInput')
+    // 画布
+    const canvasOutput = document.getElementById('canvasOutput')
+    // 输出图
+    const imageOutput = document.getElementById('imageOutput')
+    // 阈值滚动条
+    const slider = document.getElementById('cowbell')
+    // 阈值滚动条回显
+    const slideValue = document.getElementById('threshold')
+    // radios
+    const radios = document.querySelectorAll('input[name="threshold"]')
+    // 灰度化的原图 Mat
+    let sourceMat = null
+    // 处理结果 Mat
+    let destMat = null
+    // 阈值
+    let threshold = 100.0
+    // 二值化方法
+    let method = null
+
+    // 应用阈值，处理图片
+    function processImage() {
+        const cvMethod = method === 'THRESH_BINARY' ? cv.THRESH_BINARY : cv.THRESH_BINARY_INV
+        cv.threshold(sourceMat, destMat, threshold, 255, cvMethod)
+        cv.imshow('canvasOutput', destMat)
+        imageOutput.src = canvasOutput.toDataURL()
+    }
+
+    // 原图回显
+    input.addEventListener('change', e => {
+        image.src = URL.createObjectURL(e.target.files[0])
+    }, false)
+
+    // 把原图转为灰度图 Mat
+    image.onload = () => {
+        if (!cv) {
+            return
+        }
+        sourceMat = cv.imread(image)
+        cv.cvtColor(sourceMat, sourceMat, cv.COLOR_RGBA2GRAY)
+        processImage()
+        // mat.delete()
+    }
+
+    // 根据阈值，实时处理图像
+    slider.addEventListener('input', function () {
+        slideValue.innerText = slider.value
+        threshold = Number(parseFloat(slider.value))
+        if (!sourceMat) {
+            return
+        }
+        processImage()
+    })
+
+    // 根据选择的阈值方法处理图像
+    radios.forEach(radio => {
+        radio.addEventListener('change', function () {
+            method = this.value
+            if (!sourceMat) {
+                return
+            }
+            processImage()
+        })
+    })
+</script>
+<script>
+    const Module = {
+        onRuntimeInitialized() {
+            document.getElementById('status').innerHTML = 'OpenCV.js is ready.';
+            destMat = new cv.Mat()
+            method = cv.THRESH_BINARY_INV
+        }
+    }
+</script>
+<script async src="https://docs.opencv.org/4.10.0/opencv.js"></script>
+</body>
+</html>
