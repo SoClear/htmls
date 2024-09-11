@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ExtractPDF</title>
+    <script src="https://unpkg.com/pdf-lib"></script>
+</head>
+
+<body>
+    <input type="file" id="fileInput" name="fileInput" accept=".pdf, application/pdf"
+        style="height: 100px; background-color: gray" />
+    <input type="number" id="start" name="start" min="1" step="1" required />
+    ~
+    <input type="number" id="end" name="end" min="1" step="1" required />
+    <button onclick="extractAndSave()">extract and save</button>
+    <script>
+        // 缓存
+        let pdfDoc = null
+
+        fileInput.addEventListener('change', async e => {
+            const pdfFile = e.target.files[0]
+            const fileArrayBuffer = await pdfFile.arrayBuffer()
+            pdfDoc = await PDFLib.PDFDocument.load(fileArrayBuffer)
+        }, false)
+
+        async function extractAndSave() {
+            const fileInput = document.getElementById("fileInput")
+            const file = fileInput.files[0]
+            if (!file) {
+                alert('Please select a PDF file first.');
+                return;
+            }
+
+            const start = parseInt(document.getElementById("start").value)
+            const end = parseInt(document.getElementById("end").value)
+
+            if (isNaN(start) || isNaN(end) || start <= 0 || end <= 0) {
+                alert('Please input correct start and end page.');
+                return;
+            }
+            if (start > end) {
+                alert('Start page must be less than end page.');
+                return;
+            }
+
+            const blob = await extract(pdfDoc, start, end)
+            
+            if (blob) {
+                const fileName = `P${start}-P${end}_${file.name}`
+                save(blob, fileName)
+            }
+
+        }
+
+        // 提取PDF文件的startPage页到endPage页，并返回一个PDF文件的Blob对象
+        async function extract(pdfDoc, startPage, endPage) {
+            if (startPage < 1 || endPage > pdfDoc.getPageCount()) {
+                alert("Page range is out of bounds");
+                return;
+            }
+
+            const outputPdf = await PDFLib.PDFDocument.create();
+
+            for (let i = startPage - 1; i < endPage; i++) {
+                const page = pdfDoc.getPage(i);
+                const copiedPage = await outputPdf.copyPages(pdfDoc, [i]);
+                outputPdf.addPage(copiedPage[0]);
+            }
+
+            const outPdfBytes = await outputPdf.save();
+
+            return new Blob([outPdfBytes], { type: 'application/pdf' });
+        }
+
+        function save(blob, fileName) {
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = fileName;
+            link.click();
+        }
+
+    </script>
+</body>
+
+</html>
