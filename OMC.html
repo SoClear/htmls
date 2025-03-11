@@ -1,175 +1,740 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>OMC Decoder/Encoder</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OMC Decoder/Encoder for Samsung OMC files</title>
+  <style>
+    /* Light Mode Colors (default) */
+    :root {
+      --primary-color: #1a73e8;
+      --primary-hover: #1557b0;
+      --primary-light: #e8f0fe;
+      --secondary-color: #34a853;
+      --secondary-hover: #2e8b46;
+      --error-color: #ea4335;
+      --text-primary: #202124;
+      --text-secondary: #5f6368;
+      --border-color: #dadce0;
+      --bg-color: #f8f9fa;
+      --card-bg: #ffffff;
+      --shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.08);
+      --theme-switch-bg: #e2e8f0;
+      --theme-switch-circle: #ffffff;
+      --theme-icon-color: #5f6368;
+    }
+
+    /* Dark Mode Colors */
+    [data-theme="dark"] {
+      --primary-color: #8ab4f8;
+      --primary-hover: #aecbfa;
+      --primary-light: rgba(138, 180, 248, 0.12);
+      --secondary-color: #81c995;
+      --secondary-hover: #5bb974;
+      --error-color: #f28b82;
+      --text-primary: #e8eaed;
+      --text-secondary: #9aa0a6;
+      --border-color: #3c4043;
+      --bg-color: #202124;
+      --card-bg: #292a2d;
+      --shadow: 0 1px 3px rgba(0, 0, 0, 0.25), 0 1px 2px rgba(0, 0, 0, 0.20);
+      --theme-switch-bg: #555;
+      --theme-switch-circle: #202124;
+      --theme-icon-color: #e8eaed;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Google Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      transition: background-color 0.3s ease, color 0.1s ease, border-color 0.1s ease;
+    }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-primary);
+      line-height: 1.6;
+      padding: 20px;
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 40px 20px;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 40px;
+      position: relative;
+    }
+
+    .header h1 {
+      color: var(--primary-color);
+      font-size: 36px;
+      font-weight: 500;
+      margin-bottom: 8px;
+    }
+
+    .header p {
+      color: var(--text-secondary);
+      font-size: 18px;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    /* Theme Switcher */
+    .theme-switch-wrapper {
+      position: absolute;
+      top: 0;
+      right: 0;
+      display: flex;
+      align-items: center;
+    }
+
+    .theme-switch {
+      display: inline-block;
+      height: 28px;
+      position: relative;
+      width: 52px;
+    }
+
+    .theme-switch input {
+      display: none;
+    }
+
+    .slider {
+      background-color: var(--theme-switch-bg);
+      bottom: 0;
+      cursor: pointer;
+      left: 0;
+      position: absolute;
+      right: 0;
+      top: 0;
+      transition: .4s;
+      border-radius: 34px;
+    }
+
+    .slider:before {
+      background-color: var(--theme-switch-circle);
+      bottom: 4px;
+      content: "";
+      height: 20px;
+      left: 4px;
+      position: absolute;
+      transition: .4s;
+      width: 20px;
+      border-radius: 50%;
+    }
+
+    input:checked+.slider:before {
+      transform: translateX(24px);
+    }
+
+    .theme-icon {
+      color: var(--theme-icon-color);
+      margin: 0 8px;
+      font-size: 20px;
+    }
+
+    .card-container {
+      display: flex;
+      gap: 30px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .card {
+      flex: 1;
+      min-width: 300px;
+      max-width: 500px;
+      background-color: var(--card-bg);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+      padding: 24px;
+      transition: transform 0.2s, box-shadow 0.2s, background-color 0.3s;
+    }
+
+    .card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+    }
+
+    .card-header {
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+    }
+
+    .card-icon {
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-color: var(--primary-light);
+      color: var(--primary-color);
+      border-radius: 50%;
+      margin-right: 12px;
+      font-size: 20px;
+    }
+
+    .encode .card-icon {
+      background-color: rgba(52, 168, 83, 0.1);
+      color: var(--secondary-color);
+    }
+
+    [data-theme="dark"] .encode .card-icon {
+      background-color: rgba(129, 201, 149, 0.1);
+    }
+
+    .card-title {
+      font-size: 22px;
+      font-weight: 500;
+    }
+
+    .file-upload {
+      position: relative;
+      margin-top: 20px;
+    }
+
+    .file-upload-area {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 30px 20px;
+      border: 2px dashed var(--border-color);
+      border-radius: 8px;
+      background-color: var(--card-bg);
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .decode .file-upload-area:hover,
+    .decode .file-upload-area.drag-over {
+      border-color: var(--primary-color);
+      background-color: rgba(26, 115, 232, 0.05);
+    }
+
+    [data-theme="dark"] .decode .file-upload-area:hover,
+    [data-theme="dark"] .decode .file-upload-area.drag-over {
+      background-color: rgba(138, 180, 248, 0.05);
+    }
+
+    .encode .file-upload-area:hover,
+    .encode .file-upload-area.drag-over {
+      border-color: var(--secondary-color);
+      background-color: rgba(52, 168, 83, 0.05);
+    }
+
+    [data-theme="dark"] .encode .file-upload-area:hover,
+    [data-theme="dark"] .encode .file-upload-area.drag-over {
+      background-color: rgba(129, 201, 149, 0.05);
+    }
+
+    .file-upload-icon {
+      font-size: 36px;
+      margin-bottom: 12px;
+    }
+
+    .decode .file-upload-icon {
+      color: var(--primary-color);
+    }
+
+    .encode .file-upload-icon {
+      color: var(--secondary-color);
+    }
+
+    .file-upload-text {
+      margin-bottom: 8px;
+      font-size: 16px;
+      font-weight: 500;
+    }
+
+    .file-upload-hint {
+      color: var(--text-secondary);
+      font-size: 14px;
+      margin-bottom: 16px;
+    }
+
+    .file-upload-button {
+      background-color: var(--primary-color);
+      color: white;
+      padding: 10px 20px;
+      border-radius: 4px;
+      border: none;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+    }
+
+    .encode .file-upload-button {
+      background-color: var(--secondary-color);
+    }
+
+    .decode .file-upload-button:hover {
+      background-color: var(--primary-hover);
+    }
+
+    .encode .file-upload-button:hover {
+      background-color: var(--secondary-hover);
+    }
+
+    [data-theme="dark"] .file-upload-button {
+      color: #202124;
+    }
+
+    .file-upload input[type="file"] {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      opacity: 0;
+      cursor: pointer;
+    }
+
+    .processing-status {
+      display: none;
+      margin-top: 20px;
+      text-align: center;
+    }
+
+    .processing-status.active {
+      display: block;
+    }
+
+    .spinner {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 3px solid rgba(26, 115, 232, 0.3);
+      border-radius: 50%;
+      border-top-color: var(--primary-color);
+      animation: spin 1s ease-in-out infinite;
+      margin-right: 8px;
+    }
+
+    [data-theme="dark"] .spinner {
+      border: 3px solid rgba(138, 180, 248, 0.3);
+    }
+
+    .encode .spinner {
+      border: 3px solid rgba(52, 168, 83, 0.3);
+      border-top-color: var(--secondary-color);
+    }
+
+    [data-theme="dark"] .encode .spinner {
+      border: 3px solid rgba(129, 201, 149, 0.3);
+      border-top-color: var(--secondary-color);
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .status-text {
+      display: inline-block;
+      vertical-align: middle;
+    }
+
+    .status-icon {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      text-align: center;
+      line-height: 20px;
+      margin-right: 8px;
+      color: white;
+      font-weight: bold;
+    }
+
+    .status-icon.success {
+      background-color: var(--secondary-color);
+    }
+
+    .status-icon.error {
+      background-color: var(--error-color);
+    }
+
+    footer {
+      margin-top: 60px;
+      text-align: center;
+      color: var(--text-secondary);
+      font-size: 14px;
+    }
+
+    /* Responsive Adjustments */
+    @media (max-width: 768px) {
+      .header h1 {
+        font-size: 28px;
+      }
+
+      .header p {
+        font-size: 16px;
+      }
+
+      .theme-switch-wrapper {
+        position: relative;
+        margin-top: 20px;
+        justify-content: center;
+      }
+
+      .card {
+        min-width: 100%;
+      }
+    }
+  </style>
 </head>
+
 <body>
-<p>OMC Decoder/Encoder</p>
-<p>for Samsung cscfeature.xml</p>
-<input type="file" id="fileInput" style="display: none">
-<button onclick="isEncodeOperation=false; fileInput.click()">decode</button>
-<button onclick="isEncodeOperation=true; fileInput.click()">encode</button>
+  <div class="container">
+    <header class="header">
+      <h1>OMC Decoder/Encoder</h1>
+      <p>For Samsung OMC files, such as cscfeature.xml</p>
 
-<script>
-  class OMC {
-    static #shifts = new Uint8Array([
-      1, 1, 0, 2, 2, 4, 5, 0, 4, 7, 1, 6, 5, 3, 3, 1, 2, 5, 0, 6, 2, 2, 4, 2, 2, 3, 0, 2, 1, 2, 4, 3,
-      4, 0, 0, 0, 3, 5, 3, 1, 6, 5, 6, 1, 1, 1, 0, 0, 3, 2, 7, 7, 5, 6, 7, 3, 5, 1, 0, 7, 6, 3, 6, 5,
-      4, 5, 3, 5, 1, 3, 3, 1, 5, 4, 1, 0, 0, 2, 6, 6, 6, 6, 4, 0, 1, 1, 0, 5, 5, 4, 2, 4, 6, 1, 7, 1,
-      2, 1, 1, 6, 5, 4, 7, 6, 5, 1, 6, 7, 0, 2, 6, 3, 1, 7, 1, 1, 7, 4, 0, 4, 2, 5, 3, 1, 1, 5, 6, 0,
-      3, 5, 3, 6, 5, 7, 2, 5, 6, 6, 2, 2, 3, 6, 0, 4, 3, 2, 0, 2, 2, 3, 5, 3, 3, 2, 5, 5, 5, 1, 3, 1,
-      1, 1, 4, 5, 1, 6, 2, 4, 7, 1, 4, 6, 0, 6, 4, 3, 2, 6, 1, 6, 3, 2, 1, 6, 7, 3, 2, 1, 1, 5, 6, 7,
-      2, 2, 2, 7, 4, 6, 7, 5, 3, 1, 4, 2, 7, 1, 6, 2, 4, 1, 5, 6, 5, 4, 5, 0, 1, 1, 6, 3, 7, 2, 0, 2,
-      5, 0, 1, 3, 3, 2, 6, 7, 7, 2, 5, 6, 0, 4, 1, 2, 5, 3, 7, 6, 5, 2, 5, 2, 0, 1, 3, 1, 4, 3, 4, 2,
-    ])
+      <div class="theme-switch-wrapper">
+        <span class="theme-icon">☀️</span>
+        <label class="theme-switch" for="theme-checkbox">
+          <input type="checkbox" id="theme-checkbox" />
+          <div class="slider"></div>
+        </label>
+        <span class="theme-icon">🌙</span>
+      </div>
+    </header>
 
-    static #salts = new Int8Array([
-      65, -59, 33, -34, 107, 28, -107, 55, 78, 17, -81, 6, -80, -121, -35, -23, 72, 122, -63, -43, 68,
-      119, -78, -111, -60, 31, 60, 57, 92, -88, -100, -69, -106, 91, 69, 93, 110, 23, 93, 53, -44, -51,
-      64, -80, 46, 2, -4, 12, -45, 80, -44, -35, -111, -28, -66, -116, 39, 2, -27, -45, -52, 125, 39, 66,
-      -90, 63, -105, -67, 84, -57, -4, -4, 101, -90, 81, 10, -33, 1, 67, -57, -71, 18, -74, 102, 96, -89,
-      64, -17, 54, -94, -84, -66, 14, 119, 121, 2, -78, -79, 89, 63, 93, 109, -78, -51, 66, -36, 32, 86,
-      3, -58, -15, 92, 58, 2, -89, -80, -13, -1, 122, -4, 48, 63, -44, 59, 100, -42, -45, 59, -7, -17, -54,
-      34, -54, 71, -64, -26, -87, -80, -17, -44, -38, -112, 70, 10, -106, 95, -24, -4, -118, 45, -85, -13,
-      85, 25, -102, -119, 13, -37, 116, 46, -69, 59, 42, -90, -38, -105, 101, -119, -36, 97, -3, -62, -91,
-      -97, -125, 17, 14, 106, -72, -119, 99, 111, 20, 18, -27, 113, 64, -24, 74, -60, -100, 26, 56, -44,
-      -70, 12, -51, -100, -32, -11, 26, 48, -117, 98, -93, 51, -25, -79, -31, 97, 87, -105, -64, 7, -13,
-      -101, 33, -122, 5, -104, 89, -44, -117, 63, -80, -6, -71, -110, -29, -105, 116, 107, -93, 91, -41,
-      -13, 20, -115, -78, 43, 79, -122, 6, 102, -32, 52, -118, -51, 72, -104, 41, -38, 124, 72, -126, -35
-    ])
+    <div class="card-container">
+      <!-- Decode Card -->
+      <div class="card decode">
+        <div class="card-header">
+          <div class="card-icon">🔓</div>
+          <h2 class="card-title">Decode File</h2>
+        </div>
+        <p>Upload an encoded Samsung OMC file to decode it.</p>
+        <div class="file-upload">
+          <div class="file-upload-area" id="decode-drop-area">
+            <div class="file-upload-icon">📄</div>
+            <h3 class="file-upload-text">Drag & Drop file here or click to upload</h3>
+            <p class="file-upload-hint">Supports all file formats</p>
+            <button type="button" class="file-upload-button">Select File</button>
+            <input type="file" id="decode-file-input">
+          </div>
+        </div>
+        <div class="processing-status" id="decode-status">
+          <div class="spinner"></div>
+          <span class="status-text">Processing file...</span>
+        </div>
+      </div>
 
-    /**
-     * 解码字节数据
-     * @param {Uint8Array} source - 输入的字节数组
-     * @returns {Uint8Array} - 解码后的字节数组
-     */
-    static #decode(source) {
-      // 预分配结果数组
-      const result = new Uint8Array(source.length)
+      <!-- Encode Card -->
+      <div class="card encode">
+        <div class="card-header">
+          <div class="card-icon">🔒</div>
+          <h2 class="card-title">Encode File</h2>
+        </div>
+        <p>Upload a decoded file to encode it.</p>
+        <div class="file-upload">
+          <div class="file-upload-area" id="encode-drop-area">
+            <div class="file-upload-icon">📄</div>
+            <h3 class="file-upload-text">Drag & Drop file here or click to upload</h3>
+            <p class="file-upload-hint">Supports all file formats</p>
+            <button type="button" class="file-upload-button">Select File</button>
+            <input type="file" id="encode-file-input">
+          </div>
+        </div>
+        <div class="processing-status" id="encode-status">
+          <div class="spinner"></div>
+          <span class="status-text">Processing file...</span>
+        </div>
+      </div>
+    </div>
 
-      // 直接在TypedArray上操作以提高性能
-      for (let i = 0; i < source.length; i++) {
-        // 位移操作
-        const value = ((source[i] & 255) << this.#shifts[i % 256]) | ((source[i] & 255) >>> (8 - this.#shifts[i % 256]))
-        // 异或操作
-        result[i] = value ^ (this.#salts[i % 256] & 255)
+    <footer>
+      <p>This tool processes files entirely in your browser. No data is sent to any server.</p>
+    </footer>
+  </div>
+  <script>
+    class OMC {
+      static #shifts = new Uint8Array([
+        1, 1, 0, 2, 2, 4, 5, 0, 4, 7, 1, 6, 5, 3, 3, 1, 2, 5, 0, 6, 2, 2, 4, 2, 2, 3, 0, 2, 1, 2, 4, 3,
+        4, 0, 0, 0, 3, 5, 3, 1, 6, 5, 6, 1, 1, 1, 0, 0, 3, 2, 7, 7, 5, 6, 7, 3, 5, 1, 0, 7, 6, 3, 6, 5,
+        4, 5, 3, 5, 1, 3, 3, 1, 5, 4, 1, 0, 0, 2, 6, 6, 6, 6, 4, 0, 1, 1, 0, 5, 5, 4, 2, 4, 6, 1, 7, 1,
+        2, 1, 1, 6, 5, 4, 7, 6, 5, 1, 6, 7, 0, 2, 6, 3, 1, 7, 1, 1, 7, 4, 0, 4, 2, 5, 3, 1, 1, 5, 6, 0,
+        3, 5, 3, 6, 5, 7, 2, 5, 6, 6, 2, 2, 3, 6, 0, 4, 3, 2, 0, 2, 2, 3, 5, 3, 3, 2, 5, 5, 5, 1, 3, 1,
+        1, 1, 4, 5, 1, 6, 2, 4, 7, 1, 4, 6, 0, 6, 4, 3, 2, 6, 1, 6, 3, 2, 1, 6, 7, 3, 2, 1, 1, 5, 6, 7,
+        2, 2, 2, 7, 4, 6, 7, 5, 3, 1, 4, 2, 7, 1, 6, 2, 4, 1, 5, 6, 5, 4, 5, 0, 1, 1, 6, 3, 7, 2, 0, 2,
+        5, 0, 1, 3, 3, 2, 6, 7, 7, 2, 5, 6, 0, 4, 1, 2, 5, 3, 7, 6, 5, 2, 5, 2, 0, 1, 3, 1, 4, 3, 4, 2
+      ])
+
+      static #salts = new Int8Array([
+        65, -59, 33, -34, 107, 28, -107, 55, 78, 17, -81, 6, -80, -121, -35, -23, 72, 122, -63, -43, 68,
+        119, -78, -111, -60, 31, 60, 57, 92, -88, -100, -69, -106, 91, 69, 93, 110, 23, 93, 53, -44, -51,
+        64, -80, 46, 2, -4, 12, -45, 80, -44, -35, -111, -28, -66, -116, 39, 2, -27, -45, -52, 125, 39, 66,
+        -90, 63, -105, -67, 84, -57, -4, -4, 101, -90, 81, 10, -33, 1, 67, -57, -71, 18, -74, 102, 96, -89,
+        64, -17, 54, -94, -84, -66, 14, 119, 121, 2, -78, -79, 89, 63, 93, 109, -78, -51, 66, -36, 32, 86,
+        3, -58, -15, 92, 58, 2, -89, -80, -13, -1, 122, -4, 48, 63, -44, 59, 100, -42, -45, 59, -7, -17, -54,
+        34, -54, 71, -64, -26, -87, -80, -17, -44, -38, -112, 70, 10, -106, 95, -24, -4, -118, 45, -85, -13,
+        85, 25, -102, -119, 13, -37, 116, 46, -69, 59, 42, -90, -38, -105, 101, -119, -36, 97, -3, -62, -91,
+        -97, -125, 17, 14, 106, -72, -119, 99, 111, 20, 18, -27, 113, 64, -24, 74, -60, -100, 26, 56, -44,
+        -70, 12, -51, -100, -32, -11, 26, 48, -117, 98, -93, 51, -25, -79, -31, 97, 87, -105, -64, 7, -13,
+        -101, 33, -122, 5, -104, 89, -44, -117, 63, -80, -6, -71, -110, -29, -105, 116, 107, -93, 91, -41,
+        -13, 20, -115, -78, 43, 79, -122, 6, 102, -32, 52, -118, -51, 72, -104, 41, -38, 124, 72, -126, -35
+      ])
+
+      /**
+       * 解码字节数据
+       * @param {Uint8Array} source - 输入的字节数组
+       * @returns {Uint8Array} - 解码后的字节数组
+       */
+      static #decode(source) {
+        // 预分配结果数组
+        const result = new Uint8Array(source.length)
+
+        // 直接在TypedArray上操作以提高性能
+        for (let i = 0; i < source.length; i++) {
+          // 位移操作
+          const value = ((source[i] & 255) << this.#shifts[i % 256]) | ((source[i] & 255) >>> (8 - this.#shifts[i % 256]))
+          // 异或操作
+          result[i] = value ^ (this.#salts[i % 256] & 255)
+        }
+
+        return result
       }
 
-      return result
-    }
+      /**
+       * 编码字节数据
+       * @param {Uint8Array} source - 输入的字节数组
+       * @returns {Uint8Array} - 编码后的字节数组
+       */
+      static #encode(source) {
+        const result = new Uint8Array(source.length)
 
-    /**
-     * 编码字节数据
-     * @param {Uint8Array} source - 输入的字节数组
-     * @returns {Uint8Array} - 编码后的字节数组
-     */
-    static #encode(source) {
-      const result = new Uint8Array(source.length)
+        for (let i = 0; i < source.length; i++) {
+          // 先异或
+          const value = source[i] ^ (this.#salts[i % 256] & 255)
+          // 后位移
+          result[i] = ((value & 255) >> this.#shifts[i % 256]) | ((value & 255) << (8 - this.#shifts[i % 256]))
+        }
 
-      for (let i = 0; i < source.length; i++) {
-        // 先异或
-        const value = source[i] ^ (this.#salts[i % 256] & 255)
-        // 后位移
-        result[i] = ((value & 255) >> this.#shifts[i % 256]) | ((value & 255) << (8 - this.#shifts[i % 256]))
+        return result
       }
 
-      return result
+      /**
+       * GZIP解压缩
+       * @param {Uint8Array} data - 压缩的数据
+       * @returns {Promise<Uint8Array>} - 解压后的数据
+       */
+      static async #decompressGzip(data) {
+        // 使用Web API的DecompressionStream
+        const ds = new DecompressionStream('gzip')
+        const decompressedStream = new Blob([data]).stream().pipeThrough(ds)
+
+        return new Uint8Array(await new Response(decompressedStream).arrayBuffer())
+      }
+
+      /**
+       * GZIP压缩
+       * @param {Uint8Array} data - 原始数据
+       * @returns {Promise<Uint8Array>} - 压缩后的数据
+       */
+      static async #compressGzip(data) {
+        // 使用Web API的CompressionStream
+        const cs = new CompressionStream('gzip')
+        const compressedStream = new Blob([data]).stream().pipeThrough(cs)
+
+        return new Uint8Array(await new Response(compressedStream).arrayBuffer())
+      }
+
+      /**
+       * 检查文件是否是编码的XML
+       * @param {Uint8Array} data - 文件内容
+       * @returns {boolean}
+       */
+      static isXmlEncoded(data) {
+        try {
+          const decoder = new TextDecoder()
+          const headerStr = decoder.decode(data.slice(0, 100))
+          return !headerStr.includes('<?xml')
+        } catch (e) {
+          return false
+        }
+      }
+
+      /**
+       * 解码文件内容
+       * @param {Uint8Array} fileContent - 文件内容
+       * @returns {Promise<Uint8Array>} - 解码后的内容
+       */
+      static async decode(fileContent) {
+        const decoded = this.#decode(fileContent)
+        return await this.#decompressGzip(decoded)
+      }
+
+      /**
+       * 编码文件内容
+       * @param {Uint8Array} fileContent - 文件内容
+       * @returns {Promise<Uint8Array>} - 编码后的内容
+       */
+      static async encode(fileContent) {
+        const compressed = await this.#compressGzip(fileContent)
+        return this.#encode(compressed)
+      }
+    }
+  </script>
+
+  <script>
+    // Theme Switcher Logic
+    const themeToggle = document.getElementById('theme-checkbox');
+    const prefersDarkScheme = window.matchMedia('(prefers-color-scheme: dark)');
+
+    // Check for saved theme preference or use the system preference
+    const currentTheme = localStorage.getItem('theme') ||
+      (prefersDarkScheme.matches ? 'dark' : 'light');
+
+    // Set initial theme
+    if (currentTheme === 'dark') {
+      document.documentElement.setAttribute('data-theme', 'dark');
+      themeToggle.checked = true;
+    } else {
+      document.documentElement.setAttribute('data-theme', 'light');
+      themeToggle.checked = false;
     }
 
-    /**
-     * GZIP解压缩
-     * @param {Uint8Array} data - 压缩的数据
-     * @returns {Promise<Uint8Array>} - 解压后的数据
-     */
-    static async #decompressGzip(data) {
-      // 使用Web API的DecompressionStream
-      const ds = new DecompressionStream('gzip')
-      const decompressedStream = new Blob([data]).stream().pipeThrough(ds)
+    // Toggle theme when switch is clicked
+    themeToggle.addEventListener('change', function () {
+      const theme = this.checked ? 'dark' : 'light';
+      document.documentElement.setAttribute('data-theme', theme);
+      localStorage.setItem('theme', theme);
+    });
 
-      return new Uint8Array(await new Response(decompressedStream).arrayBuffer())
+    // Listen for system theme changes
+    prefersDarkScheme.addEventListener('change', function (e) {
+      // Only auto-switch if user hasn't set a preference
+      if (!localStorage.getItem('theme')) {
+        const newTheme = e.matches ? 'dark' : 'light';
+        document.documentElement.setAttribute('data-theme', newTheme);
+        themeToggle.checked = e.matches;
+      }
+    });
+
+    // Setup decode file input
+    setupFileUpload('decode-file-input', 'decode-drop-area', 'decode-status', false);
+
+    // Setup encode file input
+    setupFileUpload('encode-file-input', 'encode-drop-area', 'encode-status', true);
+
+    function setupFileUpload(inputId, dropAreaId, statusId, isEncodeOperation) {
+      const fileInput = document.getElementById(inputId);
+      const dropArea = document.getElementById(dropAreaId);
+      const statusElement = document.getElementById(statusId);
+
+      // Prevent browser default behavior
+      ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        dropArea.addEventListener(eventName, preventDefaults, false);
+      });
+
+      function preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+
+      // Highlight drop area
+      ['dragenter', 'dragover'].forEach(eventName => {
+        dropArea.addEventListener(eventName, () => {
+          dropArea.classList.add('drag-over');
+        }, false);
+      });
+
+      ['dragleave', 'drop'].forEach(eventName => {
+        dropArea.addEventListener(eventName, () => {
+          dropArea.classList.remove('drag-over');
+        }, false);
+      });
+
+      // Handle dropped files
+      dropArea.addEventListener('drop', (e) => {
+        const file = e.dataTransfer.files[0];
+        if (file) {
+          processFile(file, statusElement, isEncodeOperation);
+        } else {
+          showError(statusElement, 'No file detected');
+        }
+      }, false);
+
+      // Handle file input change
+      fileInput.onchange = (e) => {
+        const file = e.target.files[0];
+        if (!file) {
+          return;
+        }
+
+        processFile(file, statusElement, isEncodeOperation);
+
+        // Clear the input to allow reselecting the same file
+        fileInput.value = '';
+      };
     }
 
-    /**
-     * GZIP压缩
-     * @param {Uint8Array} data - 原始数据
-     * @returns {Promise<Uint8Array>} - 压缩后的数据
-     */
-    static async #compressGzip(data) {
-      // 使用Web API的CompressionStream
-      const cs = new CompressionStream('gzip')
-      const compressedStream = new Blob([data]).stream().pipeThrough(cs)
+    async function processFile(file, statusElement, isEncodeOperation) {
+      showProcessing(statusElement);
 
-      return new Uint8Array(await new Response(compressedStream).arrayBuffer())
-    }
-
-    /**
-     * 检查文件是否是编码的XML
-     * @param {Uint8Array} data - 文件内容
-     * @returns {boolean}
-     */
-    static isXmlEncoded(data) {
       try {
-        const decoder = new TextDecoder()
-        const headerStr = decoder.decode(data.slice(0, 100))
-        return !headerStr.includes('<?xml')
+        const fileContent = new Uint8Array(await file.arrayBuffer());
+
+        // Process based on operation type
+        const result = isEncodeOperation ? await OMC.encode(fileContent) : await OMC.decode(fileContent);
+
+        // Create and download the result file
+        const blob = new Blob([result], { type: isEncodeOperation ? 'application/octet-stream' : 'text/xml' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = (isEncodeOperation ? 'encoded_' : 'decoded_') + file.name;
+        a.click();
+
+        // Clean up the URL
+        setTimeout(() => URL.revokeObjectURL(url), 0);
+
+        showSuccess(statusElement, 'File processed successfully!');
       } catch (e) {
-        return false
+        console.error('Processing failed:', e);
+        showError(statusElement, 'Processing failed: ' + e.message);
       }
     }
 
-    /**
-     * 解码文件内容
-     * @param {Uint8Array} fileContent - 文件内容
-     * @returns {Promise<Uint8Array>} - 解码后的内容
-     */
-    static async decode(fileContent) {
-      const decoded = this.#decode(fileContent)
-      return await this.#decompressGzip(decoded)
+    function showProcessing(statusElement) {
+      statusElement.innerHTML = '<div class="spinner"></div><span class="status-text">Processing file...</span>';
+      statusElement.classList.add('active');
     }
 
-    /**
-     * 编码文件内容
-     * @param {Uint8Array} fileContent - 文件内容
-     * @returns {Promise<Uint8Array>} - 编码后的内容
-     */
-    static async encode(fileContent) {
-      const compressed = await this.#compressGzip(fileContent)
-      return this.#encode(compressed)
+    function showSuccess(statusElement, message) {
+      statusElement.innerHTML = '<span class="status-icon success">✓</span><span class="status-text">' + message + '</span>';
+
+      // Hide the status after 3 seconds
+      setTimeout(() => {
+        statusElement.classList.remove('active');
+      }, 3000);
     }
-  }
 
-  let isEncodeOperation = false
-  const fileInput = document.getElementById('fileInput')
+    function showError(statusElement, message) {
+      statusElement.innerHTML = '<span class="status-icon error">✕</span><span class="status-text">' + message + '</span>';
+      statusElement.classList.add('active');
 
-  // 当用户选择文件后自动处理
-  fileInput.onchange = async (e) => {
-    const file = e.target.files[0]
-    if (!file) {
-      return
+      // Hide the error after 4 seconds
+      setTimeout(() => {
+        statusElement.classList.remove('active');
+      }, 4000);
     }
-    try {
-      const fileContent = new Uint8Array(await file.arrayBuffer())
-
-      // 根据操作类型选择编码或解码
-      const result = isEncodeOperation ? await OMC.encode(fileContent) : await OMC.decode(fileContent)
-
-      // 创建并下载结果文件
-      const blob = new Blob([result], { type: isEncodeOperation ? 'application/octet-stream' : 'text/xml' })
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = (isEncodeOperation ? 'encoded_' : 'decoded_') + file.name
-      a.click()
-
-      // 清理URL
-      setTimeout(() => URL.revokeObjectURL(url), 0)
-    } catch (e) {
-      console.error('处理失败:', e)
-      alert('处理失败: ' + e.message)
-    }
-  }
-</script>
+  </script>
 </body>
+
 </html>
