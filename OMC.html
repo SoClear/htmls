@@ -405,7 +405,7 @@
       <div class="theme-switch-wrapper">
         <span class="theme-icon">☀️</span>
         <label class="theme-switch" for="theme-checkbox">
-          <input type="checkbox" id="theme-checkbox" />
+          <input type="checkbox" id="theme-checkbox" aria-label="Toggle theme between light and dark modes"/>
           <div class="slider"></div>
         </label>
         <span class="theme-icon">🌙</span>
@@ -419,7 +419,7 @@
           <div class="card-icon">🔓</div>
           <h2 class="card-title">Decode File</h2>
         </div>
-        <p>Upload an encoded Samsung OMC file to decode it.</p>
+        <label for="decode-file-input">Upload an encoded Samsung OMC file to decode it.</label>
         <div class="file-upload">
           <div class="file-upload-area" id="decode-drop-area">
             <div class="file-upload-icon">📄</div>
@@ -441,7 +441,7 @@
           <div class="card-icon">🔒</div>
           <h2 class="card-title">Encode File</h2>
         </div>
-        <p>Upload a decoded file to encode it.</p>
+        <label for="encode-file-input">Upload a decoded file to encode it.</label>
         <div class="file-upload">
           <div class="file-upload-area" id="encode-drop-area">
             <div class="file-upload-icon">📄</div>
@@ -693,21 +693,16 @@
         // Process based on operation type
         const result = isEncodeOperation ? await OMC.encode(fileContent) : await OMC.decode(fileContent);
 
-        // Create and download the result file
+        // Create the result file blob and URL
         const blob = new Blob([result], { type: isEncodeOperation ? 'application/octet-stream' : 'text/xml' });
         const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = (isEncodeOperation ? 'encoded_' : 'decoded_') + file.name;
-        a.click();
+        const downloadFilename = (isEncodeOperation ? 'encoded_' : 'decoded_') + file.name;
 
-        // Clean up the URL
-        setTimeout(() => URL.revokeObjectURL(url), 0);
-
-        showSuccess(statusElement, 'File processed successfully!');
+        // Instead of clicking programmatically, show the link to the user
+        showSuccess(statusElement, 'File processed successfully! Click below to download.', url, downloadFilename);
       } catch (e) {
         console.error('Processing failed:', e);
-        showError(statusElement, 'Processing failed: ' + e.message);
+        showError(statusElement, 'Processing failed! ' + e);
       }
     }
 
@@ -716,20 +711,41 @@
       statusElement.classList.add('active');
     }
 
-    function showSuccess(statusElement, message) {
-      statusElement.innerHTML = '<span class="status-icon success">✓</span><span class="status-text">' + message + '</span>';
+    function showSuccess(statusElement, message, downloadUrl, downloadFilename) {
+      // Create the download link element
+      const downloadLink = document.createElement('a');
+      downloadLink.href = downloadUrl;
+      downloadLink.download = downloadFilename;
+      downloadLink.textContent = `Download ${downloadFilename}`; // Set link text
+      downloadLink.style.display = 'block'; // Make it appear on its own line
+      downloadLink.style.padding = '10px'; // Add some space
+      downloadLink.style.fontWeight = '500'; // Make it stand out a bit
+      downloadLink.style.color = 'var(--primary-color)'; // Use theme color
+      downloadLink.target = '_blank';
+      downloadLink.rel = 'noopener noreferrer';
 
-      // Hide the status after 3 seconds
-      setTimeout(() => {
-        statusElement.classList.remove('active');
-      }, 3000);
+      // Add a click listener to revoke the URL *and* hide the status message
+      downloadLink.addEventListener('click', () => {
+        // Use setTimeout to ensure the download starts before revoking/hiding
+        setTimeout(() => {
+          URL.revokeObjectURL(downloadUrl); // Clean up the blob URL
+          statusElement.classList.remove('active'); // Hide the entire status area
+          // Optional: Clear the content as well for good measure
+          // statusElement.innerHTML = '';
+        }, 100); // Small delay (100ms)
+      }, { once: true }); // Listener only needs to run once
+
+      // Update status element content and show it
+      statusElement.innerHTML = `<span class="status-icon success">✓</span><span class="status-text">${message}</span>`;
+      statusElement.appendChild(downloadLink); // Append the download link
+      statusElement.classList.add('active'); // Make the status visible
     }
 
     function showError(statusElement, message) {
       statusElement.innerHTML = '<span class="status-icon error">✕</span><span class="status-text">' + message + '</span>';
       statusElement.classList.add('active');
 
-      // Hide the error after 4 seconds
+      // Keep the auto-hide for errors
       setTimeout(() => {
         statusElement.classList.remove('active');
       }, 4000);
