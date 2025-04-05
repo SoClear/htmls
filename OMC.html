@@ -310,6 +310,43 @@
       display: block;
     }
 
+    .download-link {
+      display: block;
+      /* Ensures it takes width and allows wrapping */
+      padding-block: 5%;
+      /* Adjust spacing as needed */
+      font-weight: 500;
+      color: var(--primary-color);
+      /* Or keep existing color if different */
+
+      /* --- Text wrapping properties --- */
+      /* Standard property for controlling overflow wrapping */
+      overflow-wrap: break-word;
+
+      /* Older fallback for overflow-wrap */
+      word-wrap: break-word;
+
+      /* Optional: More aggressive breaking if needed (e.g., no spaces in filename) */
+      /* word-break: break-all; */
+
+      /* Ensures the link doesn't try to expand beyond its container */
+      max-width: 100%;
+
+      /* Optional: Improves readability by allowing hyphenation (requires lang="en" etc. on <html>) */
+      -webkit-hyphens: auto;
+      -moz-hyphens: auto;
+      -ms-hyphens: auto;
+      hyphens: auto;
+    }
+
+    /* Slightly adjust the main status text line-height if needed */
+    #decode-status .status-text,
+    #encode-status .status-text {
+      display: block;
+      /* Make sure text is block for better layout with link */
+      margin-bottom: 4px;
+    }
+
     .spinner {
       display: inline-block;
       width: 20px;
@@ -405,7 +442,7 @@
       <div class="theme-switch-wrapper">
         <span class="theme-icon">☀️</span>
         <label class="theme-switch" for="theme-checkbox">
-          <input type="checkbox" id="theme-checkbox" aria-label="Toggle theme between light and dark modes"/>
+          <input type="checkbox" id="theme-checkbox" aria-label="Toggle theme between light and dark modes" />
           <div class="slider"></div>
         </label>
         <span class="theme-icon">🌙</span>
@@ -419,7 +456,7 @@
           <div class="card-icon">🔓</div>
           <h2 class="card-title">Decode File</h2>
         </div>
-        <label for="decode-file-input">Upload an encoded Samsung OMC file to decode it.</label>
+        <label for="decode-file-input">Upload an encoded file to decode it.</label>
         <div class="file-upload">
           <div class="file-upload-area" id="decode-drop-area">
             <div class="file-upload-icon">📄</div>
@@ -717,12 +754,9 @@
       downloadLink.href = downloadUrl;
       downloadLink.download = downloadFilename;
       downloadLink.textContent = `Download ${downloadFilename}`; // Set link text
-      downloadLink.style.display = 'block'; // Make it appear on its own line
-      downloadLink.style.padding = '10px'; // Add some space
-      downloadLink.style.fontWeight = '500'; // Make it stand out a bit
-      downloadLink.style.color = 'var(--primary-color)'; // Use theme color
       downloadLink.target = '_blank';
       downloadLink.rel = 'noopener noreferrer';
+      downloadLink.classList.add('download-link');
 
       // Add a click listener to revoke the URL *and* hide the status message
       downloadLink.addEventListener('click', () => {
